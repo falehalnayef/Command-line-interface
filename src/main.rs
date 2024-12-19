@@ -1,6 +1,9 @@
 use std::io::{self, Write};
 
 fn set_input(input: &mut String) {
+
+    input.clear();
+
     print!("$ ");
 
     if let Err(error) = io::stdout().flush() {
@@ -14,7 +17,13 @@ fn set_input(input: &mut String) {
 fn main() {
     let mut input = String::new();
 
-    set_input(&mut input);
+    loop{
 
-    println!("{}", input);
+        set_input(&mut input);
+
+        if input.trim() == ""  {continue};
+
+        println!("{}: command not found", input.trim());
+    }
+  
 }
