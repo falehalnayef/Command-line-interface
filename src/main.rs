@@ -1,45 +1,73 @@
 use std::io::{self, Write};
 
+enum Command<'a> {
+    Exit(i32),
+    Echo(Vec<&'a str>),
+    NotFound(&'a str),
+}
 
-struct Command;
-
-impl Command{
-    
-    fn exit(code: i32){
-        std::process::exit(code);
-    }
-    fn not_found(command: &str){
-        println!("{}: command not found", command);
+impl<'a> Command<'a> {
+    fn execute(self) {
+        match self {
+            Command::Exit(code) => std::process::exit(code),
+            Command::Echo(message) => {
+                for m in message.iter().skip(1) {
+                    print!("{} ", m);
+                }
+                println!();
+            }
+            Command::NotFound(command) => {
+                eprintln!("{}: command not found", command);
+            }
+        }
     }
 }
-fn set_input(input: &mut String) {
 
+fn match_command<'a>(tokens: Vec<&'a str>) -> Command<'a> {
+    if tokens.is_empty() {
+        return Command::NotFound("");
+    }
+
+    match tokens[0] {
+        "exit" => Command::Exit(tokens.get(1).and_then(|s| s.parse().ok()).unwrap_or(0)),
+        "echo" => Command::Echo(tokens),
+        _ => Command::NotFound(tokens[0]),
+    }
+}
+
+fn tokenizer(input: &str) -> Vec<&str> {
+    input.trim().split_whitespace().collect()
+}
+
+fn set_input(input: &mut String) {
     input.clear();
 
     print!("$ ");
-
     if let Err(error) = io::stdout().flush() {
-        println!("error: {error}");
+        eprintln!("error: {error}");
     }
 
     if let Err(error) = io::stdin().read_line(input) {
-        println!("error: {error}");
+        eprintln!("error: {error}");
     }
 }
+
 fn main() {
     let mut input = String::new();
 
-    loop{
-
+    loop {
         set_input(&mut input);
 
-        if input.trim() == ""  {continue};
+        let input = input.trim();
 
-
-        match input.trim(){
-            "exit" => Command::exit(0),
-             _ => Command::not_found(input.trim()),
+        if input.is_empty() {
+            continue;
         }
+
+        let tokens = tokenizer(input);
+
+        let command = match_command(tokens);
+
+        command.execute();
     }
-  
 }
