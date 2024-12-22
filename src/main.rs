@@ -1,4 +1,8 @@
-use std::io::{self, Write};
+use std::{
+    env, fs,
+    io::{self, Write},
+    path::{self, Path},
+};
 
 enum Command<'a> {
     Exit(i32),
@@ -17,30 +21,42 @@ impl<'a> Command<'a> {
                 }
                 println!();
             }
-            
-            Command::Type(command) => println!("{}", Command::get_type(command)),
+
+            Command::Type(command) => Command::print_type(command),
             Command::NotFound(command) => {
                 eprintln!("{}: command not found", command);
             }
         }
     }
 
-    fn get_type(command: &str) -> String{
-
+    fn print_type(command: &str) {
         match command {
-            "exit" => "exit is a shell builtin".to_string(),
-            "echo" => "echo is a shell builtin".to_string(),
-            "type" => "type is a shell builtin".to_string(),
-            _ => format!("{}: not found", command),
+            "exit" => println!("exit is a shell builtin"),
+            "echo" => println!("echo is a shell builtin"),
+            "type" => println!("type is a shell builtin"),
+            "pwd" => println!("pwd is a shell builtin"),
+            "cd" => println!("cd is a shell builtin"),
+            command => match Command::find_executable(command) {
+                Some(path) => println!("{} is {} ", command, path.display()),
+                None => println!("{}: not found", command),
+            },
         }
+    }
+
+    fn find_executable(command: &str) -> Option<path::PathBuf> {
+        if let Ok(paths) = env::var("PATH") {
+            for dir in paths.split(":") {
+                let potential_path = Path::new(dir).join(command);
+                if fs::metadata(&potential_path).is_ok() {
+                    return Some(potential_path);
+                }
+            }
+        }
+        None
     }
 }
 
 fn match_command<'a>(tokens: Vec<&'a str>) -> Command<'a> {
-    if tokens.is_empty() {
-        return Command::NotFound("");
-    }
-
     match tokens[0] {
         "exit" => Command::Exit(tokens.get(1).and_then(|s| s.parse().ok()).unwrap_or(0)),
         "echo" => Command::Echo(tokens),
