@@ -3,6 +3,7 @@ use std::io::{self, Write};
 enum Command<'a> {
     Exit(i32),
     Echo(Vec<&'a str>),
+    Type(&'a str),
     NotFound(&'a str),
 }
 
@@ -16,9 +17,21 @@ impl<'a> Command<'a> {
                 }
                 println!();
             }
+            
+            Command::Type(command) => println!("{}", Command::get_type(command)),
             Command::NotFound(command) => {
                 eprintln!("{}: command not found", command);
             }
+        }
+    }
+
+    fn get_type(command: &str) -> String{
+
+        match command {
+            "exit" => "exit is a shell builtin".to_string(),
+            "echo" => "echo is a shell builtin".to_string(),
+            "type" => "type is a shell builtin".to_string(),
+            _ => format!("{}: not found", command),
         }
     }
 }
@@ -31,6 +44,7 @@ fn match_command<'a>(tokens: Vec<&'a str>) -> Command<'a> {
     match tokens[0] {
         "exit" => Command::Exit(tokens.get(1).and_then(|s| s.parse().ok()).unwrap_or(0)),
         "echo" => Command::Echo(tokens),
+        "type" => Command::Type(tokens[1]),
         _ => Command::NotFound(tokens[0]),
     }
 }
