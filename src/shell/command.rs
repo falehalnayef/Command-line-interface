@@ -11,6 +11,7 @@ pub enum Command<'a> {
     Echo(Vec<&'a str>),
     Type(&'a str),
     Run(&'a str, Vec<&'a str>),
+    Pwd
 }
 
 impl<'a> Command<'a> {
@@ -25,6 +26,10 @@ impl<'a> Command<'a> {
             }
             Command::Type(command) => {
                 Self::print_type(command);
+                Ok(())
+            }
+            Command::Pwd => {
+                println!("{}", env::current_dir().unwrap().display());
                 Ok(())
             }
             Command::Run(program, args) => {

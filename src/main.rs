@@ -1,4 +1,4 @@
-mod shell;
+pub mod shell;
 
 use shell::Shell;
 
