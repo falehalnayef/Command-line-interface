@@ -34,11 +34,13 @@ impl<'a> Command<'a> {
                 Ok(())
             }
             Command::Cd(path) => {
-                if let Err(_) = env::set_current_dir(Path::new(path)) {
-                    Err(format!("cd: no such file or directory: {}", path))
-                } else {
-                    Ok(())
+                if path == "~" {
+                    env::set_current_dir(env::var_os("HOME").unwrap()).unwrap();
                 }
+                else if let Err(_) = env::set_current_dir(Path::new(path)) {
+                    println!("cd: no such file or directory: {}", path);
+                }
+                Ok(())
             }
             Command::Run(program, args) => {
                 if is_path(program) {
