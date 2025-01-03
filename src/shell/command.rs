@@ -11,7 +11,8 @@ pub enum Command<'a> {
     Echo(Vec<&'a str>),
     Type(&'a str),
     Run(&'a str, Vec<&'a str>),
-    Pwd
+    Pwd,
+    Cd(&'a str),
 }
 
 impl<'a> Command<'a> {
@@ -32,6 +33,13 @@ impl<'a> Command<'a> {
                 println!("{}", env::current_dir().unwrap().display());
                 Ok(())
             }
+            Command::Cd(path) => {
+                if let Err(_) = env::set_current_dir(Path::new(path)) {
+                    Err(format!("cd: no such file or directory: {}", path))
+                } else {
+                    Ok(())
+                }
+            }
             Command::Run(program, args) => {
                 if is_path(program) {
                     run_program(Path::new(program), args);
@@ -51,6 +59,8 @@ impl<'a> Command<'a> {
             Some(&"exit") => Command::Exit(tokens.get(1).and_then(|s| s.parse().ok()).unwrap_or(0)),
             Some(&"echo") => Command::Echo(tokens),
             Some(&"type") => Command::Type(tokens.get(1).unwrap_or(&"")),
+            Some(&"pwd") => Command::Pwd,
+            Some(&"cd") => Command::Cd(tokens.get(1).unwrap_or(&".")),
             Some(path) => Command::Run(path, tokens[1..].to_vec()),
             None => Command::Echo(vec![]),
         }
