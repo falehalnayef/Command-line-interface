@@ -6,23 +6,23 @@ use std::{
 
 use crate::shell::utils::{is_path, run_program};
 
-pub enum Command<'a> {
+pub enum Command {
     Exit(i32),
-    Echo(Vec<&'a str>),
-    Type(&'a str),
-    Run(&'a str, Vec<&'a str>),
+    Echo(Vec<String>),
+    Type(String),
+    Run(String, Vec<String>),
     Pwd,
-    Cd(&'a str),
+    Cd(String),
 }
 
-impl<'a> Command<'a> {
+impl Command {
     pub fn execute(self) -> Result<(), String> {
         match self {
             Command::Exit(code) => {
                 process::exit(code);
             }
             Command::Echo(message) => {
-                println!("{}", message.iter().skip(1).cloned().collect::<Vec<&str>>().join(" "));
+                println!("{}", message.iter().skip(1).cloned().collect::<Vec<String>>().join(" "));
                 Ok(())
             }
             Command::Type(command) => {
@@ -37,16 +37,16 @@ impl<'a> Command<'a> {
                 if path == "~" {
                     env::set_current_dir(env::var_os("HOME").unwrap()).unwrap();
                 }
-                else if let Err(_) = env::set_current_dir(Path::new(path)) {
-                    println!("cd: no such file or directory: {}", path);
+                else if let Err(_) = env::set_current_dir(Path::new(&path)) {
+                    println!("cd: {}: no such file or directory", path);
                 }
                 Ok(())
             }
             Command::Run(program, args) => {
-                if is_path(program) {
-                    run_program(Path::new(program), args);
+                if is_path(&program) {
+                    run_program(Path::new(&program), args);
                     Ok(())
-                } else if let Some(path) = Self::find_executable(program) {
+                } else if let Some(path) = Self::find_executable(&program) {
                     run_program(&path, args);
                     Ok(())
                 } else {
@@ -55,23 +55,23 @@ impl<'a> Command<'a> {
             }
         }
     }
-
-    pub fn from_tokens(tokens: Vec<&'a str>) -> Command<'a> {
-        match tokens.first() {
-            Some(&"exit") => Command::Exit(tokens.get(1).and_then(|s| s.parse().ok()).unwrap_or(0)),
-            Some(&"echo") => Command::Echo(tokens),
-            Some(&"type") => Command::Type(tokens.get(1).unwrap_or(&"")),
-            Some(&"pwd") => Command::Pwd,
-            Some(&"cd") => Command::Cd(tokens.get(1).unwrap_or(&".")),
-            Some(path) => Command::Run(path, tokens[1..].to_vec()),
+    pub fn from_tokens(tokens: Vec<String>) -> Command {
+        match tokens.first().map(String::as_str) {
+            Some("exit") => Command::Exit(tokens.get(1).and_then(|s| s.parse().ok()).unwrap_or(0)),
+            Some("echo") => Command::Echo(tokens),
+            Some("type") => Command::Type(tokens.get(1).unwrap_or(&String::new()).to_string()),
+            Some("pwd") => Command::Pwd,
+            Some("cd") => Command::Cd(tokens.get(1).unwrap_or(&".".to_string()).to_string()),
+            Some(path) => Command::Run(path.to_string(), tokens[1..].to_vec()),
             None => Command::Echo(vec![]),
         }
     }
-
-    fn print_type(command: &str) {
-        match command {
+    
+    
+    fn print_type(command: String) {
+        match command.as_str() {
             "exit" | "echo" | "type" | "pwd" | "cd" => println!("{command} is a shell builtin"),
-            _ => match Self::find_executable(command) {
+            _ => match Self::find_executable(&command) {
                 Some(path) => println!("{} is {}", command, path.display()),
                 None => println!("{}: not found", command),
             },

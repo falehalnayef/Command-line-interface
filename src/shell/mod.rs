@@ -35,49 +35,79 @@ impl Shell {
             eprintln!("Error reading input");
         }
     }
+   
 
     fn parse_command(&self) -> Option<Command> {
         let input = self.input_buffer.trim();
         if input.is_empty() {
             return None;
         }
-        let mut tokens = Vec::new();
-        let mut start = None;
-        let mut in_quotes = false;
-        let mut quote_char = '\0';
+        let mut s_iter = input.chars().peekable();
+
+        let mut cur_s = String::new();
     
-        for (i, c) in input.char_indices() {
-            match c {
-                '\'' | '"' if !in_quotes => {
-                    in_quotes = true;
-                    quote_char = c;
-                    start = Some(i + 1);
-                }
-                '\'' | '"' if in_quotes && c == quote_char => {
-                    in_quotes = false;
-                    if let Some(start_index) = start {
-                        tokens.push(&input[start_index..i]);
+        let mut tokens = Vec::new();
+    
+        let mut in_single_quote = false;
+    
+        let mut in_double_quote = false;
+    
+        while let Some(c) = s_iter.next() {
+    
+            if c == '\'' && !in_double_quote {
+                in_single_quote = !in_single_quote;
+    
+            } else if c == '"' && !in_single_quote {
+                in_double_quote = !in_double_quote;
+    
+            } else if c == '\\' && !in_single_quote && !in_double_quote {
+    
+                let c = s_iter.next().unwrap();
+    
+                cur_s.push(c);
+    
+            } else if c == '\\' && in_double_quote {
+    
+                match s_iter.peek().unwrap() {
+    
+                    '\\' | '$' | '"' => {
+    
+                        cur_s.push(s_iter.next().unwrap());
+    
                     }
-                    start = None;
+    
+                    _ => cur_s.push(c),
+    
+                };
+    
+            } else if c == ' ' && !in_single_quote && !in_double_quote {
+    
+                if !cur_s.is_empty() {
+    
+                    tokens.push(cur_s);
+    
+                    cur_s = String::new();
+    
                 }
-                ' ' if !in_quotes => {
-                    if let Some(start_index) = start {
-                        tokens.push(&input[start_index..i]);
-                    }
-                    start = None;
-                }
-                _ if start.is_none() && !in_quotes => {
-                    start = Some(i);
-                }
-                _ => {}
+    
+            } else {
+    
+                cur_s.push(c);
+    
             }
+    
         }
     
-        // Add the last token if it exists
-        if let Some(start_index) = start {
-            tokens.push(&input[start_index..]);
+        if !cur_s.is_empty() {
+    
+            tokens.push(cur_s);
+    
         }
     
         Some(Command::from_tokens(tokens))
-}
+    }
+    
+    
+
+
 }

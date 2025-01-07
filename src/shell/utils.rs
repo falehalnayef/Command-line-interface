@@ -8,7 +8,7 @@ pub fn is_path(data: &str) -> bool {
     path.exists() && path.is_file()
 }
 
-pub fn run_program(path: &Path, args: Vec<&str>) {
+pub fn run_program(path: &Path, args: Vec<String>) {
     match process::Command::new(path).args(args).spawn() {
         Ok(mut child) => {
             child.wait().expect("Command did not finish successfully");
